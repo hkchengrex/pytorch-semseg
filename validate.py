@@ -16,7 +16,7 @@ from ptsemseg.utils import convert_state_dict
 torch.backends.cudnn.benchmark = True
 
 def im_inv_trans(im):
-    im = im*255
+    # im = im*255
     im[0, :, :] += 104.00699
     im[1, :, :] += 116.66877
     im[2, :, :] += 122.67892
@@ -92,22 +92,22 @@ def validate(cfg, args):
             outputs = model(images)
             pred = outputs.data.max(1)[1].cpu().numpy()
 
-        # pred += 1 # Background class handling
+        pred = pred + 1
         gt = labels.numpy()
 
-        gt_im = Image.fromarray(gt[0, :, :].astype('uint8'), mode='P')
-        gt_im.putpalette(color_map())
-        gt_im.save('output/%d_gt.png' % i)
+        # gt_im = Image.fromarray(gt[0, :, :].astype('uint8'), mode='P')
+        # gt_im.putpalette(color_map())
+        # gt_im.save('output/%d_gt.png' % i)
 
-        pred_im = Image.fromarray(pred[0, :, :].astype('uint8'), mode='P')
-        pred_im.putpalette(color_map())
-        pred_im.save('output/%d_pred.png' % i)
+        # pred_im = Image.fromarray(pred[0, :, :].astype('uint8'), mode='P')
+        # pred_im.putpalette(color_map())
+        # pred_im.save('output/%d_pred.png' % i)
 
-        # print(images.min(), images.max(), images.mean())
-        rgb_im = images[0, :, :, :].detach().cpu().numpy()
-        rgb_im = im_inv_trans(rgb_im)
-        rgb_im = Image.fromarray(rgb_im.astype('uint8'))
-        rgb_im.save('output/%d_im.png' % i)
+        # # print(images.min(), images.max(), images.mean())
+        # rgb_im = images[0, :, :, :].detach().cpu().numpy()
+        # rgb_im = im_inv_trans(rgb_im)
+        # rgb_im = Image.fromarray(rgb_im.astype('uint8'))
+        # rgb_im.save('output/%d_im.png' % i)
 
         if args.measure_time:
             elapsed_time = timeit.default_timer() - start_time
@@ -124,7 +124,7 @@ def validate(cfg, args):
     for k, v in score.items():
         print(k, v)
 
-    for i in range(n_classes):
+    for i in range(n_classes-1):
         print(i, class_iou[i])
 
 

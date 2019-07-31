@@ -31,7 +31,7 @@ class MITSceneParsingBenchmarkLoader(data.Dataset):
         is_transform=False,
         img_size=512,
         augmentations=None,
-        img_norm=True,
+        img_norm=False,
         test_mode=False,
     ):
         """__init__
