@@ -3,6 +3,7 @@ import torch
 import argparse
 import timeit
 import numpy as np
+from PIL import Image
 
 from torch.utils import data
 
@@ -14,6 +15,33 @@ from ptsemseg.utils import convert_state_dict
 
 torch.backends.cudnn.benchmark = True
 
+def im_inv_trans(im):
+    im = im*255
+    im[0, :, :] += 104.00699
+    im[1, :, :] += 116.66877
+    im[2, :, :] += 122.67892
+    im = im[::-1, :, :]
+    return im.transpose(1, 2, 0)
+
+def color_map(N=256, normalized=False):
+    def bitget(byteval, idx):
+        return ((byteval & (1 << idx)) != 0)
+
+    dtype = 'float32' if normalized else 'uint8'
+    cmap = np.zeros((N, 3), dtype=dtype)
+    for i in range(N):
+        r = g = b = 0
+        c = i
+        for j in range(8):
+            r = r | (bitget(c, 0) << 7-j)
+            g = g | (bitget(c, 1) << 7-j)
+            b = b | (bitget(c, 2) << 7-j)
+            c = c >> 3
+
+        cmap[i] = np.array([r, g, b])
+
+    cmap = cmap/255 if normalized else cmap
+    return cmap
 
 def validate(cfg, args):
 
@@ -64,7 +92,22 @@ def validate(cfg, args):
             outputs = model(images)
             pred = outputs.data.max(1)[1].cpu().numpy()
 
+        # pred += 1 # Background class handling
         gt = labels.numpy()
+
+        gt_im = Image.fromarray(gt[0, :, :].astype('uint8'), mode='P')
+        gt_im.putpalette(color_map())
+        gt_im.save('output/%d_gt.png' % i)
+
+        pred_im = Image.fromarray(pred[0, :, :].astype('uint8'), mode='P')
+        pred_im.putpalette(color_map())
+        pred_im.save('output/%d_pred.png' % i)
+
+        # print(images.min(), images.max(), images.mean())
+        rgb_im = images[0, :, :, :].detach().cpu().numpy()
+        rgb_im = im_inv_trans(rgb_im)
+        rgb_im = Image.fromarray(rgb_im.astype('uint8'))
+        rgb_im.save('output/%d_im.png' % i)
 
         if args.measure_time:
             elapsed_time = timeit.default_timer() - start_time
